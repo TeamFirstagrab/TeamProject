@@ -1,6 +1,7 @@
 using DG.Tweening;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -32,16 +33,16 @@ public class GrapplingHook : MonoBehaviour
     DistanceJoint2D hookJoint;
     bool isStopped = false;
 
-    [SerializeField] Transform groundCheck;
-    [SerializeField] LayerMask groundLayer;
-    [SerializeField] float groundRadius = 0.15f;
+	PlayerController player;    // 플레이어
 
-    bool IsGrounded()
-    {
-        return Physics2D.OverlapCircle(groundCheck.position, groundRadius, groundLayer);
-    }
+	private void Awake()
+	{
+		rb = GetComponent<Rigidbody2D>();
+		sprite = GetComponent<SpriteRenderer>();
+		player = GetComponent<PlayerController>();
+	}
 
-    void Start()
+	void Start()
     {
         // 라인을 그리는 포지션을 두개로 설정하고 (PositionCount)
         // 한 점은 Player의 포지션, 한 점은 Hook의 포지션으로 설정 (SetPosition)
@@ -53,10 +54,8 @@ public class GrapplingHook : MonoBehaviour
         isAttach = false;
         hook.gameObject.SetActive(false);
 
-        rb = GetComponent<Rigidbody2D>();
-        sprite = GetComponent<SpriteRenderer>();
-        hookJoint = hook.GetComponent<DistanceJoint2D>();
-    }
+		hookJoint = hook.GetComponent<DistanceJoint2D>();
+	}
     void Update()
     {
         line.SetPosition(0, transform.position);
@@ -172,8 +171,8 @@ public class GrapplingHook : MonoBehaviour
     }
 
     void LateUpdate()
-    {
-        if (!isEnemyAttach) return;
+	{
+		if (!isEnemyAttach) return;
 
         SpriteRenderer playerSprite = GetComponent<SpriteRenderer>();
         for (int i = 0; i < enemies.Count; i++)
@@ -264,26 +263,53 @@ public class GrapplingHook : MonoBehaviour
         hook.gameObject.SetActive(false);
     }
 
-    // 슬로우 효과 코루틴
-    IEnumerator SlowRoutine()
-    {
-        // 슬로우 적용
-        sprite.color = Color.red;
-        Time.timeScale = slowFactor;
-        Time.fixedDeltaTime = 0.02f * Time.timeScale;
+	// 슬로우 효과 코루틴
+	//IEnumerator SlowRoutine()
+	//{
+	//    // 슬로우 적용
+	//    sprite.color = Color.red;
+	//    Time.timeScale = slowFactor;
+	//    Time.fixedDeltaTime = 0.02f * Time.timeScale;
 
-        // 서서히 원래 속도로 복귀
-        while (Time.timeScale < 1f)
-        {
-            Time.timeScale += (1f / slowLength) * Time.unscaledDeltaTime;
-            Time.timeScale = Mathf.Clamp(Time.timeScale, 0f, 1f);
-            Time.fixedDeltaTime = Time.timeScale * 0.02f;
-            yield return null;
-        }
+	//    // 서서히 원래 속도로 복귀
+	//    while (Time.timeScale < 1f)
+	//    {
+	//        Time.timeScale += (1f / slowLength) * Time.unscaledDeltaTime;
+	//        Time.timeScale = Mathf.Clamp(Time.timeScale, 0f, 1f);
+	//        Time.fixedDeltaTime = Time.timeScale * 0.02f;
+	//        yield return null;
+	//    }
 
-        // 오차 방지를 위해 기본값으로 복구
-        Time.timeScale = 1f;
-        Time.fixedDeltaTime = 0.02f;
-        sprite.color = Color.white;
-    }
+	//    // 오차 방지를 위해 기본값으로 복구
+	//    Time.timeScale = 1f;
+	//    Time.fixedDeltaTime = 0.02f;
+	//    sprite.color = Color.white;
+	//}
+	IEnumerator SlowRoutine()
+	{
+		// 슬로우 적용
+		sprite.color = Color.red;
+		Time.timeScale = slowFactor;
+		Time.fixedDeltaTime = 0.02f * Time.timeScale;
+
+		float elapsed = 0f;
+
+		while (elapsed < slowLength)
+		{
+			// 땅에 닿거나 그래플링 훅을 다시 사용하면 즉시 종료
+			if (player.isGrounded || isAttach)
+			{
+				break;
+			}
+
+			elapsed += Time.unscaledDeltaTime;
+			yield return null;
+		}
+
+		// 복구
+		Time.timeScale = 1f;
+		Time.fixedDeltaTime = 0.02f;
+		sprite.color = Color.white;
+	}
+
 }
