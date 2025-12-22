@@ -10,7 +10,6 @@ TagManager:
   - Object
   - NPC
   - ThrowingEnemy
-  - EndPoint
   layers:
   - Default
   - TransparentFX
@@ -18,7 +17,7 @@ TagManager:
   - Ground
   - Water
   - UI
-  - Player
+  - 
   - 
   - 
   - 
